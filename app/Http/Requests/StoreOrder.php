@@ -30,13 +30,25 @@ class StoreOrder extends FormRequest
             'cart' => 'required|array|min:1',
             'cart.*.product_id' => 'required|numeric|exists:products,id',
             'cart.*.quantity' => 'required|numeric|min:1',
-            'cart.*.variant' => 'nullable|string',
+            'cart.*.variation' => 'nullable|array',
+            'cart.*.variation.*.type' => 'nullable|string',
             'coupon_code' => 'nullable|string|exists:coupons,code',
             'payment_method' => 'required|string',
-            'payment_platform' => 'required|string|in:web,app',
-            'callback' => 'required|url',
-            'customer_id' => 'nullable|required_unless:is_guest,1|exists:users,id',
+            'payment_platform' => 'nullable|string|in:web,app',
+            'callback' => 'nullable|url',
+            'customer_id' => 'nullable|exists:users,id',
             'is_guest' => 'nullable|in:0,1',
+            'delivery_address_id' => 'nullable|exists:customer_addresses,id',
+            'guest_name' => 'nullable|string|max:255',
+            'guest_phone' => 'nullable|string|max:20',
+            'guest_address' => 'nullable|string',
+            'order_type' => 'nullable|in:delivery,self_pickup',
+            'branch_id' => 'nullable|exists:branches,id',
+            'bring_change_amount' => 'nullable|numeric',
+            'order_note' => 'nullable|string',
+            'transaction_reference' => 'nullable|string',
+            'selected_delivery_area' => 'nullable|exists:delivery_areas,id',
+            'distance' => 'nullable|numeric',
         ];
     }
 
@@ -52,19 +64,25 @@ class StoreOrder extends FormRequest
             'cart.*.quantity.required' => translate('quantity is required'),
             'cart.*.quantity.numeric' => translate('quantity must be a number'),
             'cart.*.quantity.min' => translate('quantity must be at least 1'),
-            'cart.*.variant.string' => translate('variant must be a string'),
+            'cart.*.variation.array' => translate('variation must be an array'),
+            'cart.*.variation.*.type.string' => translate('variation type must be a string'),
             'coupon_code.string' => translate('coupon code must be a string'),
             'coupon_code.exists' => translate('coupon code not found'),
             'payment_method.required' => translate('payment method is required'),
             'payment_method.string' => translate('payment method must be a string'),
-            'payment_platform.required' => translate('payment platform is required'),
             'payment_platform.string' => translate('payment platform must be a string'),
             'payment_platform.in' => translate('payment platform must be either web or app'),
-            'callback.required' => translate('callback url is required'),
             'callback.url' => translate('callback must be a valid url'),
-            'customer_id.required_unless' => translate('customer id is required unless is_guest is 1'),
             'customer_id.exists' => translate('customer not found'),
-            'is_guest.in' => translate('is_guest must be either 0 or 1')
+            'is_guest.in' => translate('is_guest must be either 0 or 1'),
+            'delivery_address_id.exists' => translate('delivery address not found'),
+            'guest_name.string' => translate('guest name must be a string'),
+            'guest_name.max' => translate('guest name must not exceed 255 characters'),
+            'guest_phone.string' => translate('guest phone must be a string'),
+            'guest_phone.max' => translate('guest phone must not exceed 20 characters'),
+            'guest_address.string' => translate('guest address must be a string'),
+            'order_type.in' => translate('order type must be either delivery or self_pickup'),
+            'branch_id.exists' => translate('branch not found'),
         ];
     }
 
@@ -100,6 +118,6 @@ class StoreOrder extends FormRequest
     {
         throw new HttpResponseException(response()->json([
             'errors' => Helpers::error_processor($validator)
-        ], 403));
+        ], 422));
     }
 }

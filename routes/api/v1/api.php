@@ -149,10 +149,10 @@ Route::group(['middleware' => 'localization'], function () {
         Route::post('payment-mobile', [PaymentController::class, 'payment'])->middleware('guest_user')->withoutMiddleware('auth:api')->name('payment-mobile');
 
         Route::controller(OrderController::class)->group(function () {
-            Route::prefix('order')->middleware('guest_user')->withoutMiddleware('auth:api')->group(function () {
+            Route::prefix('order')->middleware('guest_user')->group(function () {
                 Route::get('list', 'getOrderList');
                 Route::post('details', 'getOrderDetails');
-                Route::post('place', 'placeOrder');
+                Route::post('place', 'placeOrder'); // Removed withoutMiddleware('auth:api') to require auth
                 Route::put('cancel', 'cancelOrder');
                 Route::post('track', 'trackOrder');
                 Route::put('payment-method', 'updatePaymentMethod');

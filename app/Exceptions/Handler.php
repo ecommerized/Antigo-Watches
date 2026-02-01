@@ -50,6 +50,45 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        // For API routes, return JSON responses
+        if ($request->is('api/*') || $request->expectsJson()) {
+            if ($exception instanceof \Illuminate\Validation\ValidationException) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $exception->errors()
+                ], 422);
+            }
+
+            if ($exception instanceof \Illuminate\Auth\AuthenticationException) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated'
+                ], 401);
+            }
+
+            if ($exception instanceof \Illuminate\Auth\Access\AuthorizationException) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden'
+                ], 403);
+            }
+
+            // Log the error
+            \Log::error('API Error: ' . $exception->getMessage(), [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'user_agent' => $request->userAgent(),
+                'ip' => $request->ip(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
+        }
+
         return parent::render($request, $exception);
     }
 }

@@ -102,19 +102,29 @@ class OrderController extends Controller
      */
     public function placeOrder(StoreOrder $request): JsonResponse
     {
-        try{
+        // Require authentication
+        if (!auth('api')->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
+        try {
             $orderCalculation = $this->calculateOrderAmount(
                 $request['cart'],
                 $request->coupon_code ?? null,
-                auth('api')->id() ?? config('guest_id')
+                auth('api')->id()
             );
 
             $orderAmount = $orderCalculation['order_amount'];
             $couponDiscount = $orderCalculation['coupon_discount'];
-            $userId = auth('api')->id() ?? config('guest_id');
-            $userType = auth('api')->check() ? 0 : 1;
-            $deliveryCharge = $request['order_type'] === 'self_pickup' ? 0 : Helpers::get_delivery_charge(
-                    branchId: $request['branch_id'],
+            $userId = auth('api')->id();
+            $userType = 0; // Always authenticated user now
+            $orderType = $request['order_type'] ?? 'delivery';
+            $branchId = $request['branch_id'] ?? 1; // Default to first branch
+            $deliveryCharge = $orderType === 'self_pickup' ? 0 : Helpers::get_delivery_charge(
+                    branchId: $branchId,
                     distance: $request['distance'] ?? 0,
                     selectedDeliveryArea: $request['selected_delivery_area'] ?? null
                 );
@@ -131,12 +141,12 @@ class OrderController extends Controller
                 'payment_method' => $request['payment_method'],
                 'transaction_reference' => $request->transaction_reference ?? null,
                 'order_note' => $request['order_note'] ?? null,
-                'order_type' => $request['order_type'],
-                'branch_id' => $request['branch_id'],
-                'bring_change_amount' => $request['bring_change_amount'],
-                'delivery_address_id' => $request['delivery_address_id'],
+                'order_type' => $orderType,
+                'branch_id' => $branchId,
+                'bring_change_amount' => $request['bring_change_amount'] ?? 0,
+                'delivery_address_id' => $request['delivery_address_id'] ?? null,
                 'delivery_charge' => $deliveryCharge,
-                'delivery_address' => $this->customerAddress->find($request->delivery_address_id) ?? null,
+                'delivery_address' => null, // Will be set from user's saved address
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -196,7 +206,7 @@ class OrderController extends Controller
                 $orderArea->save();
             }
 
-            if ($request['payment_method'] == 'wallet') {
+            if ($request['payment_method'] == 'wallet' && $userType == 0) {
                 $this->customerDebitWalletTransactionsForOrderPlace(customer: $order->customer, order: $order);
             }
             DB::commit();
@@ -224,24 +234,29 @@ class OrderController extends Controller
                 }
             }
 
-        }  catch (ValidationException $e) {
-            $errors = collect($e->errors())->map(function($messages, $field) {
-                return [
-                    'code' => $field,
-                    'message' => $messages[0] ?? ''
-                ];
-            })->values();
+            return response()->json([
+                'success' => true,
+                'message' => translate('Order placed successfully'),
+                'order_id' => $order->id
+            ], 200);
 
-            return response()->json(['errors' => $errors], 403);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['errors' => [['message' => $e->getMessage()]]], 403);
+            \Log::error('Order placement failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
         }
-
-        return response()->json([
-            'message' => translate('Order placed successfully'),
-            'order_id' => $order->id
-        ], 200);
     }
 
     /**
