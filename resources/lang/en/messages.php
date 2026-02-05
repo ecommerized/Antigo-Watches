@@ -1867,4 +1867,13 @@
   'SMS Gateway Configuration' => 'SMS Gateway Configuration',
   '3rd Party APIs' => '3rd Party APIs',
   'Admin Panel' => 'Admin Panel',
+  'variation must be an array' => 'Variation must be an array',
+  'variation type must be a string' => 'Variation type must be a string',
+  'delivery address not found' => 'Delivery address not found',
+  'guest name must be a string' => 'Guest name must be a string',
+  'guest name must not exceed 255 characters' => 'Guest name must not exceed 255 characters',
+  'guest phone must be a string' => 'Guest phone must be a string',
+  'guest phone must not exceed 20 characters' => 'Guest phone must not exceed 20 characters',
+  'guest address must be a string' => 'Guest address must be a string',
+  'order type must be either delivery or self_pickup' => 'Order type must be either delivery or self pickup',
 );

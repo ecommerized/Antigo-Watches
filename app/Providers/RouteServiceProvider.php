@@ -28,12 +28,20 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
-    {
-        //
+  public function boot()
+{
+    parent::boot();
 
-        parent::boot();
-    }
+    // Load API V1 routes
+    Route::middleware('api')
+        ->prefix('api/v1')
+        ->group(base_path('routes/api/v1/api.php'));
+
+    // Load API V2 routes
+    Route::middleware('api')
+        ->prefix('api/v2')
+        ->group(base_path('routes/api/v2/api.php'));
+}
 
     /**
      * Define the routes for the application.

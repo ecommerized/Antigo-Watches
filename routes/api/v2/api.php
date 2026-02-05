@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+// use App\Http\Controllers\Api\V2\LsLibController;
 
-Route::group(['namespace' => 'Api\V2'], function () {
-    Route::post('ls-lib-update', 'LsLibController@lib_update');
-});
+// Route::post('ls-lib-update', [LsLibController::class, 'lib_update']);
